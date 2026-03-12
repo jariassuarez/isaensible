@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from app.paths import STATIC_DIR
 from app.routers import hosts, terminal
 
-app = FastAPI(title="ISAensible", description="Cluster management dashboard")
+app = FastAPI(title="ISAEnsible", description="Cluster management dashboard")
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
