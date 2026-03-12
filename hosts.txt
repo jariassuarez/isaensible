@@ -1,0 +1,10 @@
+# name  address  [optional label]
+#
+# Examples:
+# web01   192.168.1.10
+# db01    192.168.1.11   Database Primary
+# proxy   192.168.1.12   Reverse Proxy
+
+web01    192.168.1.10
+web02    192.168.1.11   Web Server 2
+db01     192.168.1.20   Database Primary

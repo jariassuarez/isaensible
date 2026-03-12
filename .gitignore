@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Environment
+.env
+
+# xterm.js (fetched via fetch_xterm.sh, not committed)
+app/static/js/xterm.js
+app/static/js/xterm-addon-fit.js
+app/static/css/xterm.css
+
+# Editor
+.vscode/
+.idea/
+*.swp

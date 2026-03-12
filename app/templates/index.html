@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Cluster Dashboard — ISAensible{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Cluster Dashboard</h1>
+  <span class="last-updated">Last updated: <span id="last-updated">—</span></span>
+</div>
+
+{% if not hosts %}
+<div class="empty-state">
+  No hosts found. Add entries to <code>hosts.txt</code>.
+</div>
+{% else %}
+<table class="host-table">
+  <thead>
+    <tr>
+      <th>Status</th>
+      <th>Name</th>
+      <th>Address</th>
+      <th>Label</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="host-tbody">
+    {% for host in hosts %}
+    <tr id="row-{{ loop.index }}" data-address="{{ host.address }}">
+      <td>
+        <span class="status-dot status-unknown" id="dot-{{ host.address | replace('.', '-') }}"></span>
+        <span class="status-text" id="status-{{ host.address | replace('.', '-') }}">—</span>
+      </td>
+      <td class="host-name">{{ host.name }}</td>
+      <td class="host-address">{{ host.address }}</td>
+      <td class="host-label">{{ host.label }}</td>
+      <td class="host-actions">
+        <a class="btn btn-ssh" href="/terminal/{{ host.address }}" target="_blank">SSH</a>
+        <button class="btn btn-upload" onclick="openUpload('{{ host.address }}')">Send File</button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<div id="upload-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-backdrop" onclick="closeUpload()"></div>
+  <div class="modal-box">
+    <h2 id="modal-title">Send File</h2>
+    <p class="modal-host">Host: <strong id="modal-address"></strong></p>
+    <form id="upload-form" enctype="multipart/form-data">
+      <label for="upload-file">Local file</label>
+      <input type="file" id="upload-file" name="file" required>
+      <label for="remote-path">Remote path</label>
+      <input type="text" id="remote-path" name="remote_path" placeholder="/home/ubuntu/file.txt" required>
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-upload">Upload</button>
+        <button type="button" class="btn btn-cancel" onclick="closeUpload()">Cancel</button>
+      </div>
+    </form>
+    <div id="upload-status" class="upload-status hidden"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/app.js"></script>
+<script>
+  initDashboard({{ hosts_json | tojson }}, {{ poll_interval }});
+</script>
+{% endblock %}

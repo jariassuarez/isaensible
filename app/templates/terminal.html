@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Terminal — {{ address }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/xterm.css">
+<style>
+  body { overflow: hidden; }
+  .container { padding: 0; max-width: 100%; height: calc(100vh - 48px); display: flex; flex-direction: column; }
+  .terminal-header { padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .terminal-header .addr { font-family: monospace; color: var(--accent); }
+  #terminal-container { flex: 1; background: #000; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="terminal-header">
+  <span>SSH session:</span>
+  <span class="addr">{{ address }}</span>
+  <span id="term-status" class="status-text">Connecting…</span>
+</div>
+<div id="terminal-container"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/xterm.js"></script>
+<script src="/static/js/xterm-addon-fit.js"></script>
+<script>
+  (function () {
+    const address = {{ address | tojson }};
+    const wsProto = location.protocol === "https:" ? "wss" : "ws";
+    const wsUrl = `${wsProto}://${location.host}/ws/terminal/${address}`;
+
+    const term = new Terminal({
+      cursorBlink: true,
+      fontSize: 14,
+      fontFamily: "'Cascadia Code', 'Fira Mono', monospace",
+      theme: { background: "#0d0d0d", foreground: "#d4d4d4" },
+    });
+
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById("terminal-container"));
+    fitAddon.fit();
+
+    const ws = new WebSocket(wsUrl);
+    ws.binaryType = "arraybuffer";
+
+    ws.onopen = () => {
+      document.getElementById("term-status").textContent = "Connected";
+      document.getElementById("term-status").style.color = "var(--success)";
+
+      term.onData((data) => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(new TextEncoder().encode(data));
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        fitAddon.fit();
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+        }
+      });
+
+      ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+    };
+
+    ws.onmessage = (event) => {
+      if (event.data instanceof ArrayBuffer) {
+        term.write(new Uint8Array(event.data));
+      } else {
+        term.write(event.data);
+      }
+    };
+
+    ws.onclose = () => {
+      const el = document.getElementById("term-status");
+      el.textContent = "Disconnected";
+      el.style.color = "var(--danger)";
+      term.write("\r\n\x1b[31m[Session closed]\x1b[0m\r\n");
+    };
+
+    ws.onerror = () => {
+      term.write("\r\n\x1b[31m[WebSocket error]\x1b[0m\r\n");
+    };
+  })();
+</script>
+{% endblock %}

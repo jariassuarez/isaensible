@@ -1,0 +1,259 @@
+:root {
+  --bg: #0f0f1a;
+  --surface: #1a1a2e;
+  --card: #16213e;
+  --border: #2a2a4a;
+  --text: #e0e0e0;
+  --muted: #888;
+  --accent: #4f9cf9;
+  --success: #4caf50;
+  --danger: #ef5350;
+  --btn-ssh: #1565c0;
+  --btn-ssh-hover: #1976d2;
+  --btn-upload: #00695c;
+  --btn-upload-hover: #00796b;
+  --btn-cancel: #37474f;
+  --btn-cancel-hover: #455a64;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.navbar {
+  height: 48px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.navbar-brand {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.page-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.last-updated {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.empty-state {
+  padding: 48px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--card);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.host-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.host-table thead tr {
+  background: var(--surface);
+}
+
+.host-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.host-table tbody tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.host-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.host-table tbody tr:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.host-table td {
+  padding: 12px 16px;
+  vertical-align: middle;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.status-dot.status-unknown { background: var(--muted); }
+.status-dot.status-online  { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.status-dot.status-offline { background: var(--danger);  box-shadow: 0 0 6px var(--danger); }
+
+.status-text {
+  font-size: 12px;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+.host-name    { font-weight: 500; }
+.host-address { font-family: monospace; color: var(--accent); }
+.host-label   { color: var(--muted); }
+
+.host-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 14px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-ssh    { background: var(--btn-ssh);    color: #fff; }
+.btn-ssh:hover { background: var(--btn-ssh-hover); }
+
+.btn-upload { background: var(--btn-upload); color: #fff; }
+.btn-upload:hover { background: var(--btn-upload-hover); }
+
+.btn-cancel { background: var(--btn-cancel); color: #fff; }
+.btn-cancel:hover { background: var(--btn-cancel-hover); }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal.hidden { display: none; }
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+}
+
+.modal-box {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 28px 32px;
+  width: 460px;
+  max-width: 95vw;
+}
+
+.modal-box h2 {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.modal-host {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.modal-box label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 4px;
+  margin-top: 14px;
+}
+
+.modal-box input[type="file"],
+.modal-box input[type="text"] {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.modal-box input[type="text"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.upload-status {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.upload-status.success { background: rgba(76,175,80,0.15); color: var(--success); }
+.upload-status.error   { background: rgba(239,83,80,0.15); color: var(--danger); }
+.upload-status.hidden  { display: none; }
