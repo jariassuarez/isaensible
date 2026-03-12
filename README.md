@@ -1,4 +1,4 @@
-# ISAensible
+# ISAEnsible
 
 Web dashboard for managing a cluster of Ubuntu servers on a closed network.
 
