@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 
 import asyncssh
@@ -20,6 +22,12 @@ def _connect_kwargs() -> dict:
         kwargs["password"] = settings.ssh_password
 
     return kwargs
+
+
+async def run_command(address: str, command: str) -> tuple[int, str, str]:
+    async with asyncssh.connect(address, **_connect_kwargs()) as conn:
+        result = await conn.run(command, check=False)
+        return result.exit_status or 0, result.stdout or "", result.stderr or ""
 
 
 async def upload_file(address: str, data: bytes, remote_path: str) -> None:

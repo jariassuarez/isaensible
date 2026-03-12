@@ -13,9 +13,20 @@
   No hosts found. Add entries to <code>hosts.txt</code>.
 </div>
 {% else %}
+
+<div id="bulk-bar" class="bulk-bar hidden">
+  <span id="selection-count" class="bulk-count"></span>
+  <div class="bulk-actions">
+    <button class="btn btn-cmd" onclick="openBulkCommand()">Run Command</button>
+    <button class="btn btn-upload" onclick="openBulkUpload()">Send File</button>
+    <button class="btn btn-cancel" onclick="clearSelection()">Deselect All</button>
+  </div>
+</div>
+
 <table class="host-table">
   <thead>
     <tr>
+      <th class="col-check"><input type="checkbox" id="select-all" title="Select all"></th>
       <th>Status</th>
       <th>Name</th>
       <th>Address</th>
@@ -26,6 +37,9 @@
   <tbody id="host-tbody">
     {% for host in hosts %}
     <tr id="row-{{ loop.index }}" data-address="{{ host.address }}">
+      <td class="col-check">
+        <input type="checkbox" class="host-check" data-address="{{ host.address }}">
+      </td>
       <td>
         <span class="status-dot status-unknown" id="dot-{{ host.address | replace('.', '-') }}"></span>
         <span class="status-text" id="status-{{ host.address | replace('.', '-') }}">—</span>
@@ -43,11 +57,11 @@
 </table>
 {% endif %}
 
-<div id="upload-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+<div id="upload-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="upload-modal-title">
   <div class="modal-backdrop" onclick="closeUpload()"></div>
   <div class="modal-box">
-    <h2 id="modal-title">Send File</h2>
-    <p class="modal-host">Host: <strong id="modal-address"></strong></p>
+    <h2 id="upload-modal-title">Send File</h2>
+    <p class="modal-host" id="upload-modal-subtitle"></p>
     <form id="upload-form" enctype="multipart/form-data">
       <label for="upload-file">Local file</label>
       <input type="file" id="upload-file" name="file" required>
@@ -59,6 +73,23 @@
       </div>
     </form>
     <div id="upload-status" class="upload-status hidden"></div>
+  </div>
+</div>
+
+<div id="cmd-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cmd-modal-title">
+  <div class="modal-backdrop" onclick="closeCommand()"></div>
+  <div class="modal-box modal-box-wide">
+    <h2 id="cmd-modal-title">Run Command</h2>
+    <p class="modal-host" id="cmd-modal-subtitle"></p>
+    <form id="cmd-form">
+      <label for="cmd-input">Command</label>
+      <input type="text" id="cmd-input" placeholder="e.g. uptime" autocomplete="off" required>
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-cmd">Run</button>
+        <button type="button" class="btn btn-cancel" onclick="closeCommand()">Cancel</button>
+      </div>
+    </form>
+    <div id="cmd-results" class="cmd-results hidden"></div>
   </div>
 </div>
 {% endblock %}

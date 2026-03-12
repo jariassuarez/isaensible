@@ -1,4 +1,6 @@
 :root {
+  --btn-cmd: #6a1b9a;
+  --btn-cmd-hover: #7b1fa2;
   --bg: #0f0f1a;
   --surface: #1a1a2e;
   --card: #16213e;
@@ -176,6 +178,9 @@ body {
 .btn-cancel { background: var(--btn-cancel); color: #fff; }
 .btn-cancel:hover { background: var(--btn-cancel-hover); }
 
+.btn-cmd { background: var(--btn-cmd); color: #fff; }
+.btn-cmd:hover { background: var(--btn-cmd-hover); }
+
 .modal {
   position: fixed;
   inset: 0;
@@ -257,3 +262,124 @@ body {
 .upload-status.success { background: rgba(76,175,80,0.15); color: var(--success); }
 .upload-status.error   { background: rgba(239,83,80,0.15); color: var(--danger); }
 .upload-status.hidden  { display: none; }
+
+.col-check {
+  width: 36px;
+  padding-left: 14px;
+  padding-right: 4px;
+}
+
+.col-check input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.host-table tbody tr.selected {
+  background: rgba(79,156,249,0.07);
+}
+
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+}
+
+.bulk-bar.hidden { display: none; }
+
+.bulk-count {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-box-wide {
+  width: 680px;
+}
+
+.modal-box textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 7px 10px;
+  font-size: 13px;
+  font-family: monospace;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.modal-box textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.cmd-results {
+  margin-top: 16px;
+  max-height: 380px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cmd-results.hidden { display: none; }
+
+.cmd-result-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cmd-result-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+}
+
+.cmd-result-header .host-addr {
+  font-family: monospace;
+  color: var(--accent);
+}
+
+.cmd-result-header .exit-badge {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.exit-badge.ok    { background: rgba(76,175,80,0.2);  color: var(--success); }
+.exit-badge.fail  { background: rgba(239,83,80,0.2);  color: var(--danger); }
+
+.cmd-result-body {
+  padding: 8px 12px;
+  font-family: monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text);
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.cmd-result-body.stderr { color: var(--danger); }
+.cmd-result-body.error-msg { color: var(--danger); font-style: italic; }
