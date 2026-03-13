@@ -82,11 +82,18 @@ function initDashboard(hosts, pollIntervalSeconds, metricsIntervalSeconds) {
     if (toggle) toggle.textContent = count > 0 ? "Deselect All" : "Select All";
   }
 
+  function isExcluded(label) {
+    return label && (label.includes("{exclude}") || label.includes("[exclude]"));
+  }
+
   function updateSelectAll() {
-    const all = document.querySelectorAll(".host-check");
+    const all = Array.from(document.querySelectorAll(".host-check")).filter((cb) => {
+      const row = document.querySelector(`tr[data-address="${cb.dataset.address}"]`);
+      return !row || !isExcluded(row.dataset.label);
+    });
     const selectAllCb = document.getElementById("select-all");
     if (!selectAllCb) return;
-    const checked = Array.from(all).filter((cb) => cb.checked).length;
+    const checked = all.filter((cb) => cb.checked).length;
     selectAllCb.indeterminate = checked > 0 && checked < all.length;
     selectAllCb.checked = checked === all.length && all.length > 0;
   }
@@ -131,6 +138,8 @@ function initDashboard(hosts, pollIntervalSeconds, metricsIntervalSeconds) {
     selectAllCb.addEventListener("change", () => {
       const val = selectAllCb.checked;
       document.querySelectorAll(".host-check").forEach((cb) => {
+        const row = document.querySelector(`tr[data-address="${cb.dataset.address}"]`);
+        if (val && row && isExcluded(row.dataset.label)) return;
         cb.checked = val;
         setRowSelected(cb.dataset.address, val);
       });
@@ -141,6 +150,10 @@ function initDashboard(hosts, pollIntervalSeconds, metricsIntervalSeconds) {
   window.toggleSelection = function () {
     const anySelected = selectedAddresses.size > 0;
     document.querySelectorAll(".host-check").forEach((cb) => {
+      if (!anySelected) {
+        const row = document.querySelector(`tr[data-address="${cb.dataset.address}"]`);
+        if (row && isExcluded(row.dataset.label)) return;
+      }
       cb.checked = !anySelected;
       setRowSelected(cb.dataset.address, !anySelected);
     });
