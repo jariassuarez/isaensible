@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Cluster SSH — ISAEnsible{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/xterm.css">
+<style>
+  body { overflow: hidden; }
+  .container {
+    padding: 0;
+    max-width: 100%;
+    height: calc(100vh - 48px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .mt-connected { color: var(--muted); }
+
+  .mt-grid {
+    flex: 1;
+    display: grid;
+    overflow: hidden;
+    gap: 3px;
+    padding: 3px;
+    background: var(--bg);
+  }
+
+  .mt-panel {
+    display: flex;
+    flex-direction: column;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .mt-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 10px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .mt-panel-addr {
+    font-family: monospace;
+    color: var(--accent);
+  }
+
+  .mt-panel-status {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .mt-term {
+    flex: 1;
+    overflow: hidden;
+    padding: 4px;
+  }
+
+  .mt-broadcast {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .mt-broadcast-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  #broadcast-input {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: monospace;
+  }
+
+  #broadcast-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mt-header">
+  <span>Cluster SSH &mdash; {{ addresses | length }} host{{ 's' if addresses | length != 1 else '' }}</span>
+  <span class="mt-connected" id="connected-count">Connecting…</span>
+</div>
+
+<div id="mt-grid" class="mt-grid"></div>
+
+<div class="mt-broadcast">
+  <span class="mt-broadcast-label">Broadcast</span>
+  <input id="broadcast-input" type="text" placeholder="Type and press Enter to send to all terminals" autocomplete="off" spellcheck="false">
+  <button class="btn btn-cancel btn-sm" onclick="sendCtrlC()">^C</button>
+  <button class="btn btn-cancel btn-sm" onclick="sendCtrlU()">^U</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/xterm.js"></script>
+<script src="/static/js/xterm-addon-fit.js"></script>
+<script>
+(function () {
+  const addresses = {{ addresses | tojson }};
+  const wsProto = location.protocol === "https:" ? "wss" : "ws";
+  const sessions = [];
+
+  const grid = document.getElementById("mt-grid");
+
+  const cols = addresses.length <= 1 ? 1 : addresses.length <= 4 ? 2 : 3;
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+  addresses.forEach(function (address) {
+    const safeId = address.replace(/\./g, "-").replace(/:/g, "-");
+
+    const panel = document.createElement("div");
+    panel.className = "mt-panel";
+    panel.innerHTML =
+      '<div class="mt-panel-header">' +
+        '<span class="mt-panel-addr">' + address + '</span>' +
+        '<span class="mt-panel-status" id="ps-' + safeId + '">Connecting\u2026</span>' +
+      '</div>' +
+      '<div class="mt-term" id="t-' + safeId + '"></div>';
+    grid.appendChild(panel);
+
+    const termEl = document.getElementById("t-" + safeId);
+    const statusEl = document.getElementById("ps-" + safeId);
+
+    const term = new Terminal({
+      cursorBlink: true,
+      fontSize: 13,
+      fontFamily: "'Cascadia Code', 'Fira Mono', monospace",
+      theme: { background: "#0d0d0d", foreground: "#d4d4d4" },
+    });
+
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(termEl);
+    fitAddon.fit();
+
+    const ws = new WebSocket(wsProto + "://" + location.host + "/ws/terminal/" + address);
+    ws.binaryType = "arraybuffer";
+
+    sessions.push({ address: address, ws: ws, term: term, fitAddon: fitAddon });
+
+    ws.onopen = function () {
+      statusEl.textContent = "Connected";
+      statusEl.style.color = "var(--success)";
+      ws.send(JSON.stringify({ type: "resize", cols: term.cols, rows: term.rows }));
+
+      term.onData(function (data) {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(new TextEncoder().encode(data));
+        }
+      });
+
+      updateCount();
+    };
+
+    ws.onmessage = function (e) {
+      if (e.data instanceof ArrayBuffer) {
+        term.write(new Uint8Array(e.data));
+      } else {
+        term.write(e.data);
+      }
+    };
+
+    ws.onclose = function () {
+      statusEl.textContent = "Disconnected";
+      statusEl.style.color = "var(--danger)";
+      term.write("\r\n\x1b[31m[Session closed]\x1b[0m\r\n");
+      updateCount();
+    };
+
+    ws.onerror = function () {
+      term.write("\r\n\x1b[31m[Connection error]\x1b[0m\r\n");
+    };
+  });
+
+  function updateCount() {
+    var n = sessions.filter(function (s) { return s.ws.readyState === WebSocket.OPEN; }).length;
+    document.getElementById("connected-count").textContent = n + "/" + sessions.length + " connected";
+  }
+
+  function broadcastRaw(data) {
+    sessions.forEach(function (s) {
+      if (s.ws.readyState === WebSocket.OPEN) {
+        s.ws.send(data);
+      }
+    });
+  }
+
+  window.addEventListener("resize", function () {
+    sessions.forEach(function (s) {
+      s.fitAddon.fit();
+      if (s.ws.readyState === WebSocket.OPEN) {
+        s.ws.send(JSON.stringify({ type: "resize", cols: s.term.cols, rows: s.term.rows }));
+      }
+    });
+  });
+
+  const broadcastInput = document.getElementById("broadcast-input");
+
+  broadcastInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      var cmd = broadcastInput.value;
+      broadcastInput.value = "";
+      broadcastRaw(new TextEncoder().encode(cmd + "\n"));
+    } else if (e.ctrlKey && e.key === "c") {
+      e.preventDefault();
+      broadcastRaw(new Uint8Array([3]));
+    } else if (e.ctrlKey && e.key === "u") {
+      e.preventDefault();
+      broadcastInput.value = "";
+      broadcastRaw(new Uint8Array([21]));
+    }
+  });
+
+  window.sendCtrlC = function () {
+    broadcastRaw(new Uint8Array([3]));
+    broadcastInput.focus();
+  };
+
+  window.sendCtrlU = function () {
+    broadcastInput.value = "";
+    broadcastRaw(new Uint8Array([21]));
+    broadcastInput.focus();
+  };
+
+  broadcastInput.focus();
+})();
+</script>
+{% endblock %}

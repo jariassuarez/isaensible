@@ -6,16 +6,11 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from app.config import settings
-from app.models import (
-    BulkCommandRequest,
-    HostCommandResult,
-    HostStatus,
-    HostUploadResult,
-)
+from app.models import HostStatus, HostUploadResult
 from app.paths import TEMPLATES_DIR
 from app.services.hosts import load_hosts
 from app.services.ping import ping_host
-from app.services.ssh import run_command, upload_file
+from app.services.ssh import upload_file
 
 router = APIRouter()
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
@@ -43,23 +38,6 @@ async def hosts_status():
         HostStatus(name=h.name, address=h.address, label=h.label, online=online)
         for h, online in zip(hosts, results)
     ]
-
-
-@router.post("/api/hosts/bulk/command", response_model=List[HostCommandResult])
-async def bulk_command(req: BulkCommandRequest):
-    async def _run(address: str) -> HostCommandResult:
-        try:
-            exit_status, stdout, stderr = await run_command(address, req.command)
-            return HostCommandResult(
-                address=address,
-                exit_status=exit_status,
-                stdout=stdout,
-                stderr=stderr,
-            )
-        except Exception as exc:
-            return HostCommandResult(address=address, exit_status=-1, error=str(exc))
-
-    return await asyncio.gather(*[_run(addr) for addr in req.addresses])
 
 
 @router.post("/api/hosts/bulk/upload", response_model=List[HostUploadResult])

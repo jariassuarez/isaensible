@@ -17,7 +17,7 @@
 <div id="bulk-bar" class="bulk-bar hidden">
   <span id="selection-count" class="bulk-count"></span>
   <div class="bulk-actions">
-    <button class="btn btn-cmd" onclick="openBulkCommand()">Run Command</button>
+    <button class="btn btn-cmd" onclick="openClusterSSH()">Cluster SSH</button>
     <button class="btn btn-upload" onclick="openBulkUpload()">Send File</button>
     <button class="btn btn-cancel" onclick="clearSelection()">Deselect All</button>
   </div>
@@ -76,22 +76,6 @@
   </div>
 </div>
 
-<div id="cmd-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cmd-modal-title">
-  <div class="modal-backdrop" onclick="closeCommand()"></div>
-  <div class="modal-box modal-box-wide">
-    <h2 id="cmd-modal-title">Run Command</h2>
-    <p class="modal-host" id="cmd-modal-subtitle"></p>
-    <form id="cmd-form">
-      <label for="cmd-input">Command</label>
-      <input type="text" id="cmd-input" placeholder="e.g. uptime" autocomplete="off" required>
-      <div class="modal-actions">
-        <button type="submit" class="btn btn-cmd">Run</button>
-        <button type="button" class="btn btn-cancel" onclick="closeCommand()">Cancel</button>
-      </div>
-    </form>
-    <div id="cmd-results" class="cmd-results hidden"></div>
-  </div>
-</div>
 {% endblock %}
 
 {% block scripts %}

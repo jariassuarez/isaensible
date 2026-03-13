@@ -84,6 +84,12 @@ function initDashboard(hosts, pollIntervalSeconds) {
     });
   };
 
+  window.openClusterSSH = function () {
+    if (selectedAddresses.size === 0) return;
+    const hostsParam = Array.from(selectedAddresses).join(",");
+    window.open("/terminal/multi?hosts=" + encodeURIComponent(hostsParam), "_blank");
+  };
+
   function resetUploadModal() {
     document.getElementById("upload-form").reset();
     const statusEl = document.getElementById("upload-status");
@@ -167,87 +173,7 @@ function initDashboard(hosts, pollIntervalSeconds) {
     }
   });
 
-  window.openBulkCommand = function () {
-    if (selectedAddresses.size === 0) return;
-    const addrs = Array.from(selectedAddresses).join(", ");
-    document.getElementById("cmd-modal-subtitle").textContent =
-      selectedAddresses.size + " hosts: " + addrs;
-    document.getElementById("cmd-form").reset();
-    document.getElementById("cmd-results").className = "cmd-results hidden";
-    document.getElementById("cmd-results").innerHTML = "";
-    document.getElementById("cmd-modal").classList.remove("hidden");
-    document.getElementById("cmd-input").focus();
-  };
-
-  window.closeCommand = function () {
-    document.getElementById("cmd-modal").classList.add("hidden");
-  };
-
-  document.getElementById("cmd-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const command = document.getElementById("cmd-input").value.trim();
-    if (!command) return;
-
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const resultsEl = document.getElementById("cmd-results");
-    submitBtn.disabled = true;
-    resultsEl.className = "cmd-results hidden";
-    resultsEl.innerHTML = "";
-
-    try {
-      const res = await fetch("/api/hosts/bulk/command", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          addresses: Array.from(selectedAddresses),
-          command,
-        }),
-      });
-      const results = await res.json();
-      resultsEl.innerHTML = results.map(renderCommandResult).join("");
-      resultsEl.className = "cmd-results";
-    } catch (err) {
-      resultsEl.innerHTML =
-        `<div class="cmd-result-item"><div class="cmd-result-body error-msg">Network error: ${err.message}</div></div>`;
-      resultsEl.className = "cmd-results";
-    } finally {
-      submitBtn.disabled = false;
-    }
-  });
-
-  function renderCommandResult(r) {
-    const ok = !r.error && r.exit_status === 0;
-    const badgeClass = ok ? "ok" : "fail";
-    const badgeText = r.error ? "Error" : "Exit " + r.exit_status;
-    const output = r.error
-      ? `<div class="cmd-result-body error-msg">${escHtml(r.error)}</div>`
-      : [
-          r.stdout ? `<div class="cmd-result-body">${escHtml(r.stdout)}</div>` : "",
-          r.stderr ? `<div class="cmd-result-body stderr">${escHtml(r.stderr)}</div>` : "",
-        ].join("");
-
-    return `
-      <div class="cmd-result-item">
-        <div class="cmd-result-header">
-          <span class="host-addr">${escHtml(r.address)}</span>
-          <span class="exit-badge ${badgeClass}">${badgeText}</span>
-        </div>
-        ${output || '<div class="cmd-result-body" style="color:var(--muted)">(no output)</div>'}
-      </div>`;
-  }
-
-  function escHtml(str) {
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      closeUpload();
-      closeCommand();
-    }
+    if (e.key === "Escape") closeUpload();
   });
 }

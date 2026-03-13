@@ -16,19 +16,6 @@ class HostStatus(BaseModel):
     online: bool
 
 
-class BulkCommandRequest(BaseModel):
-    addresses: list[str]
-    command: str
-
-
-class HostCommandResult(BaseModel):
-    address: str
-    exit_status: int = 0
-    stdout: str = ""
-    stderr: str = ""
-    error: str = ""
-
-
 class HostUploadResult(BaseModel):
     address: str
     ok: bool

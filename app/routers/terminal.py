@@ -13,6 +13,15 @@ router = APIRouter()
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 
+@router.get("/terminal/multi", response_class=HTMLResponse)
+async def multi_terminal_page(request: Request, hosts: str = ""):
+    addresses = [a.strip() for a in hosts.split(",") if a.strip()]
+    return templates.TemplateResponse(
+        "multi_terminal.html",
+        {"request": request, "addresses": addresses},
+    )
+
+
 @router.get("/terminal/{address}", response_class=HTMLResponse)
 async def terminal_page(request: Request, address: str):
     return templates.TemplateResponse(
