@@ -14,14 +14,19 @@
 </div>
 {% else %}
 
-<div id="bulk-bar" class="bulk-bar hidden">
-  <span id="selection-count" class="bulk-count"></span>
+<div class="bulk-bar">
   <div class="bulk-actions">
-    <button class="btn btn-cmd" onclick="openClusterSSH()">Cluster SSH</button>
-    <button class="btn btn-upload" onclick="openBulkUpload()">Send File</button>
-    <button class="btn btn-cancel" onclick="clearSelection()">Deselect All</button>
+    <button id="bulk-select-toggle" class="btn btn-cancel" onclick="toggleSelection()">Select All</button>
+    <span id="selection-count" class="bulk-count">0 hosts selected</span>
+  </div>
+  <div class="bulk-actions">
+    <button id="bulk-cluster-ssh" class="btn btn-cmd"    onclick="openClusterSSH()"  disabled>Cluster SSH</button>
+    <button id="bulk-send-file"   class="btn btn-upload" onclick="openBulkUpload()"   disabled>Send File</button>
+    <button id="bulk-push-key"    class="btn btn-key"    onclick="openPushKey()"      disabled>Push SSH Key</button>
   </div>
 </div>
+
+<div id="label-filter" class="label-filter"></div>
 
 <table class="host-table">
   <thead>
@@ -31,12 +36,16 @@
       <th>Name</th>
       <th>Address</th>
       <th>Label</th>
+      <th class="col-metric">CPU</th>
+      <th class="col-metric">RAM</th>
+      <th class="col-metric">Disk</th>
       <th>Actions</th>
     </tr>
   </thead>
   <tbody id="host-tbody">
     {% for host in hosts %}
-    <tr id="row-{{ loop.index }}" data-address="{{ host.address }}">
+    <tr id="row-{{ loop.index }}" data-address="{{ host.address }}" data-label="{{ host.label }}"
+        data-name="{{ host.name }}">
       <td class="col-check">
         <input type="checkbox" class="host-check" data-address="{{ host.address }}">
       </td>
@@ -47,9 +56,17 @@
       <td class="host-name">{{ host.name }}</td>
       <td class="host-address">{{ host.address }}</td>
       <td class="host-label">{{ host.label }}</td>
+      <td class="metric-cell" id="m-cpu-{{ host.address | replace('.', '-') }}">—</td>
+      <td class="metric-cell" id="m-mem-{{ host.address | replace('.', '-') }}">—</td>
+      <td class="metric-cell" id="m-disk-{{ host.address | replace('.', '-') }}">—</td>
       <td class="host-actions">
         <a class="btn btn-ssh" href="/terminal/{{ host.address }}" target="_blank">SSH</a>
         <button class="btn btn-upload" onclick="openUpload('{{ host.address }}')">Send File</button>
+        <button class="btn btn-note {% if notes.get(host.address) %}btn-note-filled{% endif %}"
+                id="note-btn-{{ host.address | replace('.', '-') }}"
+                onclick="openNote('{{ host.address }}', '{{ host.name }}')">Note</button>
+        <button class="btn btn-reboot" onclick="confirmPower('reboot', '{{ host.address }}', '{{ host.name }}')">Reboot</button>
+        <button class="btn btn-shutdown" onclick="confirmPower('shutdown', '{{ host.address }}', '{{ host.name }}')">Shutdown</button>
       </td>
     </tr>
     {% endfor %}
@@ -76,11 +93,57 @@
   </div>
 </div>
 
+<div id="note-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="note-modal-title">
+  <div class="modal-backdrop" onclick="closeNote()"></div>
+  <div class="modal-box">
+    <h2 id="note-modal-title">Note</h2>
+    <p class="modal-host" id="note-modal-subtitle"></p>
+    <input type="hidden" id="note-address">
+    <label for="note-text">Note</label>
+    <textarea id="note-text" rows="5" placeholder="Enter notes about this host…"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-ssh" onclick="saveNote()">Save</button>
+      <button class="btn btn-cancel" onclick="closeNote()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="push-key-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="push-key-modal-title">
+  <div class="modal-backdrop" onclick="closePushKey()"></div>
+  <div class="modal-box modal-box-wide">
+    <h2 id="push-key-modal-title">Push SSH Key</h2>
+    <p class="modal-host" id="push-key-modal-subtitle"></p>
+    <form id="push-key-form">
+      <label for="push-key-input">Public key</label>
+      <textarea id="push-key-input" name="public_key" rows="4"
+                placeholder="ssh-ed25519 AAAA… user@host" required></textarea>
+      <div class="modal-actions">
+        <button type="submit" class="btn btn-key">Push Key</button>
+        <button type="button" class="btn btn-cancel" onclick="closePushKey()">Cancel</button>
+      </div>
+    </form>
+    <div id="push-key-status" class="upload-status hidden"></div>
+  </div>
+</div>
+
+<div id="power-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="power-modal-title">
+  <div class="modal-backdrop" onclick="closePower()"></div>
+  <div class="modal-box">
+    <h2 id="power-modal-title"></h2>
+    <p id="power-modal-body" class="modal-host"></p>
+    <div class="modal-actions">
+      <button id="power-confirm-btn" class="btn">Confirm</button>
+      <button class="btn btn-cancel" onclick="closePower()">Cancel</button>
+    </div>
+    <div id="power-status" class="upload-status hidden"></div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script src="/static/js/app.js"></script>
 <script>
-  initDashboard({{ hosts_json | tojson }}, {{ poll_interval }});
+  initDashboard({{ hosts_json | tojson }}, {{ poll_interval }}, {{ metrics_interval }});
 </script>
 {% endblock %}

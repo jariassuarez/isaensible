@@ -30,6 +30,18 @@ async def run_command(address: str, command: str) -> tuple[int, str, str]:
         return result.exit_status or 0, result.stdout or "", result.stderr or ""
 
 
+async def push_public_key(address: str, public_key: str) -> None:
+    async with asyncssh.connect(address, **_connect_kwargs()) as conn:
+        await conn.run("mkdir -p ~/.ssh && chmod 700 ~/.ssh", check=True)
+        await conn.run(
+            'grep -qxF -- "$KEY" ~/.ssh/authorized_keys 2>/dev/null'
+            ' || echo "$KEY" >> ~/.ssh/authorized_keys'
+            " && chmod 600 ~/.ssh/authorized_keys",
+            env={"KEY": public_key.strip()},
+            check=True,
+        )
+
+
 async def upload_file(address: str, data: bytes, remote_path: str) -> None:
     async with asyncssh.connect(address, **_connect_kwargs()) as conn:
         async with conn.start_sftp_client() as sftp:

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     ping_count: int = 1
 
     poll_interval: int = 10
+    metrics_interval: int = 60
 
 
 settings = Settings()

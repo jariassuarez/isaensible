@@ -16,6 +16,14 @@ class HostStatus(BaseModel):
     online: bool
 
 
+class HostMetrics(BaseModel):
+    address: str
+    available: bool = True
+    cpu: float = 0.0
+    mem: float = 0.0
+    disk: float = 0.0
+
+
 class HostUploadResult(BaseModel):
     address: str
     ok: bool
