@@ -28,3 +28,11 @@ class HostUploadResult(BaseModel):
     address: str
     ok: bool
     error: str = ""
+
+
+class FileEntry(BaseModel):
+    name: str
+    path: str
+    is_dir: bool
+    size: int | None = None
+    modified: int | None = None  # Unix timestamp

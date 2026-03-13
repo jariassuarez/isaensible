@@ -51,10 +51,17 @@ async def hosts_metrics():
     return await asyncio.gather(*[fetch_metrics(h.address) for h in hosts])
 
 
+def _sudo(cmd: str) -> tuple[str, dict]:
+    if settings.ssh_password:
+        return f'echo "$_SUDOPW" | sudo -S {cmd}', {"_SUDOPW": settings.ssh_password}
+    return f"sudo {cmd}", {}
+
+
 @router.post("/api/hosts/{address}/reboot")
 async def reboot_host(address: str):
+    cmd, env = _sudo("reboot")
     try:
-        await run_command(address, "sudo reboot")
+        await run_command(address, cmd, env=env)
     except Exception as exc:
         return JSONResponse(status_code=502, content={"detail": str(exc)})
     return {"status": "ok"}
@@ -62,8 +69,9 @@ async def reboot_host(address: str):
 
 @router.post("/api/hosts/{address}/shutdown")
 async def shutdown_host(address: str):
+    cmd, env = _sudo("shutdown -h now")
     try:
-        await run_command(address, "sudo shutdown -h now")
+        await run_command(address, cmd, env=env)
     except Exception as exc:
         return JSONResponse(status_code=502, content={"detail": str(exc)})
     return {"status": "ok"}

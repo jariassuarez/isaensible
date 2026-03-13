@@ -3,11 +3,11 @@ import json
 
 import asyncssh
 from fastapi import APIRouter, File, Form, Request, UploadFile, WebSocket
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from app.paths import TEMPLATES_DIR
-from app.services.ssh import connect_kwargs, upload_file
+from app.services.ssh import connect_kwargs, delete_file, download_file, list_directory, upload_file
 
 router = APIRouter()
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
@@ -85,6 +85,52 @@ async def terminal_ws(websocket: WebSocket, address: str):
             await websocket.close()
         except Exception:
             pass
+
+
+@router.get("/filebrowser/{address}", response_class=HTMLResponse)
+async def filebrowser_page(request: Request, address: str, path: str = ""):
+    start_path = path or "~"
+    return templates.TemplateResponse(
+        "filebrowser.html",
+        {"request": request, "address": address, "start_path": start_path},
+    )
+
+
+@router.get("/api/hosts/{address}/files/download")
+async def api_download_file(address: str, path: str):
+    try:
+        data = await download_file(address, path)
+    except asyncssh.Error as exc:
+        return JSONResponse(status_code=502, content={"detail": str(exc)})
+    except Exception as exc:
+        return JSONResponse(status_code=500, content={"detail": str(exc)})
+    filename = path.rsplit("/", 1)[-1]
+    return Response(
+        content=data,
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/api/hosts/{address}/files")
+async def api_list_files(address: str, path: str = "/"):
+    try:
+        return await list_directory(address, path)
+    except asyncssh.Error as exc:
+        return JSONResponse(status_code=502, content={"detail": str(exc)})
+    except Exception as exc:
+        return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+
+@router.delete("/api/hosts/{address}/files")
+async def api_delete_file(address: str, path: str):
+    try:
+        await delete_file(address, path)
+    except asyncssh.Error as exc:
+        return JSONResponse(status_code=502, content={"detail": str(exc)})
+    except Exception as exc:
+        return JSONResponse(status_code=500, content={"detail": str(exc)})
+    return {"ok": True}
 
 
 @router.post("/api/hosts/{address}/upload")

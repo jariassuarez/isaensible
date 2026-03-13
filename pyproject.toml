@@ -22,5 +22,5 @@ isaensible = "app.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
 
-[tool.hatch.build.targets.wheel.sources]
-"app" = "app"
+[tool.hatch.build.targets.wheel.force-include]
+"app/static" = "app/static"

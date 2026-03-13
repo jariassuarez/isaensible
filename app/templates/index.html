@@ -61,6 +61,7 @@
       <td class="metric-cell" id="m-disk-{{ host.address | replace('.', '-') }}">—</td>
       <td class="host-actions">
         <a class="btn btn-ssh" href="/terminal/{{ host.address }}" target="_blank">SSH</a>
+        <a class="btn btn-files" href="/filebrowser/{{ host.address }}" target="_blank">Files</a>
         <button class="btn btn-upload" onclick="openUpload('{{ host.address }}')">Send File</button>
         <button class="btn btn-note {% if notes.get(host.address) %}btn-note-filled{% endif %}"
                 id="note-btn-{{ host.address | replace('.', '-') }}"

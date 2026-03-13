@@ -397,3 +397,46 @@ body {
 .metric-ok   { color: var(--success); }
 .metric-warn { color: var(--warning); }
 .metric-danger { color: var(--danger); }
+
+.btn-files { background: #6a3ea1; color: #fff; }
+.btn-files:hover { background: #7c4db5; }
+
+/* File Browser */
+.fb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.fb-breadcrumb {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-family: monospace;
+  font-size: 13px;
+  min-height: 34px;
+}
+
+.fb-crumb {
+  color: var(--accent);
+  cursor: pointer;
+}
+.fb-crumb:hover { text-decoration: underline; }
+.fb-crumb-sep { color: var(--muted); }
+
+.fb-dir-link {
+  cursor: pointer;
+  color: var(--accent);
+  font-family: monospace;
+}
+.fb-dir-link:hover { text-decoration: underline; }
+
+.fb-file-name { color: var(--text); font-family: monospace; }
+.fb-entry-name { font-family: monospace; }
+.fb-mtime { color: var(--muted); font-size: 12px; }

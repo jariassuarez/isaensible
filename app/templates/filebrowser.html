@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Files — {{ address }} — ISAEnsible{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>File Browser</h1>
+  <span class="last-updated">{{ address }}</span>
+</div>
+
+<div class="fb-toolbar">
+  <nav class="fb-breadcrumb" id="fb-breadcrumb"></nav>
+  <a class="btn btn-ssh" href="/terminal/{{ address }}" target="_blank">SSH</a>
+  <a class="btn btn-cancel" href="/">Dashboard</a>
+</div>
+
+<div id="fb-error" class="upload-status error hidden"></div>
+
+<table class="host-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th class="col-metric" style="width:100px">Size</th>
+      <th style="width:170px">Modified</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="fb-tbody">
+    <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">Loading…</td></tr>
+  </tbody>
+</table>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ADDRESS = {{ address | tojson }};
+let currentPath = {{ start_path | tojson }};
+
+function formatSize(bytes) {
+  if (bytes == null) return '—';
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+  return (bytes / 1073741824).toFixed(2) + ' GB';
+}
+
+function formatDate(ts) {
+  if (!ts) return '—';
+  return new Date(ts * 1000).toLocaleString();
+}
+
+function parentPath(path) {
+  const p = path.replace(/\/+$/, '');
+  const idx = p.lastIndexOf('/');
+  return idx <= 0 ? '/' : p.slice(0, idx);
+}
+
+function renderBreadcrumb(path) {
+  const parts = path.replace(/\/+$/, '').split('/');
+  const crumb = document.getElementById('fb-breadcrumb');
+  crumb.innerHTML = '';
+
+  const rootEl = document.createElement('span');
+  rootEl.className = 'fb-crumb';
+  rootEl.textContent = '/';
+  rootEl.onclick = () => loadDir('/');
+  crumb.appendChild(rootEl);
+
+  let accumulated = '';
+  for (let i = 1; i < parts.length; i++) {
+    if (!parts[i]) continue;
+    accumulated += '/' + parts[i];
+    const sep = document.createElement('span');
+    sep.className = 'fb-crumb-sep';
+    sep.textContent = ' / ';
+    crumb.appendChild(sep);
+    const span = document.createElement('span');
+    span.className = 'fb-crumb';
+    span.textContent = parts[i];
+    const capPath = accumulated;
+    span.onclick = () => loadDir(capPath);
+    crumb.appendChild(span);
+  }
+}
+
+function esc(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function loadDir(path) {
+  const errEl = document.getElementById('fb-error');
+  const tbody = document.getElementById('fb-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">Loading…</td></tr>';
+  errEl.classList.add('hidden');
+  try {
+    const res = await fetch(`/api/hosts/${ADDRESS}/files?path=${encodeURIComponent(path)}`);
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || res.statusText);
+    }
+    const data = await res.json();
+    currentPath = data.path;
+    renderBreadcrumb(data.path);
+    history.replaceState(null, '', `/filebrowser/${ADDRESS}?path=${encodeURIComponent(data.path)}`);
+    renderTable(data.entries, data.path);
+  } catch (e) {
+    errEl.textContent = 'Error: ' + e.message;
+    errEl.classList.remove('hidden');
+    tbody.innerHTML = '';
+  }
+}
+
+function makeNameCell(entry) {
+  const span = document.createElement('span');
+  if (entry.is_dir) {
+    span.className = 'fb-dir-link';
+    span.textContent = '\u{1F4C1} ' + entry.name;
+    span.addEventListener('click', () => loadDir(entry.path));
+  } else {
+    span.className = 'fb-file-name';
+    span.textContent = '\u{1F4C4} ' + entry.name;
+  }
+  return span;
+}
+
+function makeActionsCell(entry) {
+  const td = document.createElement('td');
+  td.className = 'host-actions';
+  if (entry.is_dir) return td;
+
+  const dl = document.createElement('a');
+  dl.className = 'btn btn-ssh';
+  dl.style.cssText = 'font-size:12px;padding:4px 10px';
+  dl.href = `/api/hosts/${ADDRESS}/files/download?path=${encodeURIComponent(entry.path)}`;
+  dl.textContent = 'Download';
+
+  const del = document.createElement('button');
+  del.className = 'btn btn-shutdown';
+  del.style.cssText = 'font-size:12px;padding:4px 10px';
+  del.textContent = 'Delete';
+  del.addEventListener('click', () => deleteFile(entry.path, entry.name));
+
+  td.append(dl, del);
+  return td;
+}
+
+function renderTable(entries, path) {
+  const tbody = document.getElementById('fb-tbody');
+  tbody.innerHTML = '';
+
+  if (path !== '/') {
+    const upPath = parentPath(path);
+    const upSpan = document.createElement('span');
+    upSpan.className = 'fb-dir-link';
+    upSpan.textContent = '..';
+    upSpan.addEventListener('click', () => loadDir(upPath));
+    const td = document.createElement('td');
+    td.className = 'fb-entry-name';
+    td.colSpan = 3;
+    td.appendChild(upSpan);
+    const tr = document.createElement('tr');
+    tr.append(td, document.createElement('td'));
+    tbody.appendChild(tr);
+  }
+
+  if (!entries.length) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td colspan="4" style="text-align:center;color:var(--muted);padding:24px">Empty directory</td>';
+    tbody.appendChild(tr);
+    return;
+  }
+
+  for (const entry of entries) {
+    const nameTd = document.createElement('td');
+    nameTd.className = 'fb-entry-name';
+    nameTd.appendChild(makeNameCell(entry));
+
+    const sizeTd = document.createElement('td');
+    sizeTd.className = 'metric-cell';
+    sizeTd.textContent = formatSize(entry.size);
+
+    const mtimeTd = document.createElement('td');
+    mtimeTd.className = 'fb-mtime';
+    mtimeTd.textContent = formatDate(entry.modified);
+
+    const tr = document.createElement('tr');
+    tr.append(nameTd, sizeTd, mtimeTd, makeActionsCell(entry));
+    tbody.appendChild(tr);
+  }
+}
+
+async function deleteFile(path, name) {
+  if (!confirm(`Delete "${name}"?\n\nThis cannot be undone.`)) return;
+  const errEl = document.getElementById('fb-error');
+  errEl.classList.add('hidden');
+  try {
+    const res = await fetch(`/api/hosts/${ADDRESS}/files?path=${encodeURIComponent(path)}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || res.statusText);
+    }
+    loadDir(currentPath);
+  } catch (e) {
+    errEl.textContent = 'Delete failed: ' + e.message;
+    errEl.classList.remove('hidden');
+  }
+}
+
+loadDir(currentPath);
+</script>
+{% endblock %}
