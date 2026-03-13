@@ -5,8 +5,15 @@ Web dashboard for managing a cluster of Ubuntu servers on a closed network.
 ## Features
 
 - Live ping status (green/red) for each host, polled automatically
+- Host metrics (CPU, RAM, Disk usage) fetched via SSH, polled automatically
 - Web-based SSH terminal per host
-- File upload to any host via SFTP
+- Multi-host Cluster SSH — open a split terminal for selected hosts simultaneously
+- File upload to any host via SFTP (single or bulk)
+- Bulk SSH key push to selected hosts
+- Per-host notes
+- Reboot / Shutdown actions per host
+- Label-based grouping with filter pills and group-level checkboxes
+- Select All / Deselect All with per-group support; hosts labelled `{exclude}` or `[exclude]` are skipped by Select All
 
 ## Install
 
@@ -44,7 +51,10 @@ One host per line: `name address [optional label]`
 web01   192.168.1.10
 db01    192.168.1.11  Database Primary
 proxy   192.168.1.12  Reverse Proxy
+old01   192.168.1.20  Legacy {exclude}
 ```
+
+Hosts whose label contains `{exclude}` or `[exclude]` are displayed normally but skipped when using **Select All**.
 
 ## Configuration
 
@@ -59,3 +69,4 @@ All options are set via `.env` or environment variables. See `.env.example` for 
 | `SSH_PASSWORD`    |                   | Password auth (key-based preferred)      |
 | `SSH_KNOWN_HOSTS` |                   | Path to known_hosts; empty skips check   |
 | `POLL_INTERVAL`   | `10`              | Status poll frequency in seconds         |
+| `METRICS_INTERVAL`| `30`              | Metrics poll frequency in seconds        |
